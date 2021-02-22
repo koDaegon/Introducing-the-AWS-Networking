@@ -1,0 +1,115 @@
+# 1장 - AWS 소개
+
+### (퍼블릭) 클라우드
+
+- 언제든지 원하는 만큼의 IT 리소스를 사용할 수 있게 하는 서비스
+
+### AWS
+
+- 인프라의 논리적인 규모에 따라 아래와 같이 분리 가능
+    - 글로벌 인프라
+    - 리전(엣지): 지리적인 영역내에서 격리되고 물리적으로 분리된 여러개의 가용영역의 모음 , 최소 2개이상의 가용영역으로 구성
+    - 가용영역 : 한개이상의 데이터 센터들의 모음, 전용망으로 연결되어 있음
+    - 데이터센터: 물리영역, IT 인프라 영역, 운영 영역으로 구성되어 있음
+- 엣지:  외부 인터넷과 AWS 글로벌 네트워크 망과 연결하는 별도의 센터
+    - 엣지 로케이션 , 엣지 케시로 구성되어 있음 (ex. CloudFront)
+
+### AWS Network
+
+ AWS VPC(Virtual Private Cloud) 
+
+- 논리적으로 독립된 섹션을 제공하여 사용자가 정의한 가상 네트워크상에서 다양한 리소스들을 실행할 수 있게 지원
+
+AWS VPN(Virtual Private Network)
+
+- 공용 인터넷을 통해 가상의 사설 네트워크를 구성하여 프라이빗 통신을 제공하는 것
+- 데이터 암호화, 전용 연결등의 다양한 보안 요구사항을 충족 가능
+
+ELB(Elastic Load Balancer)
+
+- AWS에서 제공하는 로드밸런싱 기술(시스템 데이터를 분산하여 전달)
+
+AWS PrivateLink
+
+- 퍼블릭 인터넷에 데이터가 노출되지 않도록 하여 내부 내트워크를 통해 AWS와 온프렘간에 비공개 연결을 제공
+
+Route53
+
+- 관리형 DNS
+- 도메인 이름 구매대행
+- 도메인 주소에 대한 호스팅 영역 설정을 통해 도메인 query에 대한 응답을 처리
+
+AWS Transit GW
+
+- 다양한 네트워크를 단일지점으로 연결할 수 있는 라우팅 서비스
+
+AWS DirectConnect
+
+- 전용선을 바탕으로 온프렘 및 AWS와의 네트워크 연결을 제공하는 서비스
+
+AWS CloudFront
+
+- Content Delivery Network 서비스
+- 엣지 POP을 두고 AWS 글로벌 네트워크를 통해 콘텐츠를 캐싱하여 서비스를 제공
+
+AWS Global Accelerator
+
+- 로컬 또는 글로벌 사용자를 대상으로 Application의 가용성과 성능을 개선할 수 있는 서비스
+- 경로를 최적화 하여 트래픽의 성능을 개선
+
+네트워크 보안 요소
+
+- Security Group
+- Network ACL
+- Firewall Manager
+
+### Lab 01
+
+![1%E1%84%8C%E1%85%A1%E1%86%BC%20-%20AWS%20%E1%84%89%E1%85%A9%E1%84%80%E1%85%A2%20e16ff5a629ff4914b7735d07c30235b0/Untitled.png](1%E1%84%8C%E1%85%A1%E1%86%BC%20-%20AWS%20%E1%84%89%E1%85%A9%E1%84%80%E1%85%A2%20e16ff5a629ff4914b7735d07c30235b0/Untitled.png)
+
+- Updated parameter for getting latest linux2 ami-id
+
+    ```yaml
+    Parameters:
+      KeyName:
+        Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. Linked to AWS Parameter
+        Type: AWS::EC2::KeyPair::KeyName
+        ConstraintDescription: must be the name of an existing EC2 KeyPair.
+      LastestImg:
+        Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+        Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+    Resources:
+      MyInstance:
+        Type: AWS::EC2::Instance
+        Properties:
+          ImageId: !Ref LastestImg
+          InstanceType: t2.micro
+          KeyName: !Ref KeyName
+          Tags:
+            - Key: Name
+              Value: WebServer
+          SecurityGroups:
+            - !Ref MySG
+          UserData:
+            Fn::Base64:
+              !Sub |
+                #!/bin/bash
+                yum install httpd -y
+                systemctl start httpd
+                echo "<h1>Test Web Server</h1>" > /var/www/html/index.html
+
+      MySG:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+          GroupDescription: Enable HTTP access via port 80 and SSH access via port 22
+          SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: 0.0.0.0/0
+    ```
